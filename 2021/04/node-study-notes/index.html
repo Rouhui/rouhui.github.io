@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="前言公司官网要做seo，选用了nuxt框架。压测导致系统崩溃，虽然主因在后台接口，但也暴露出了C端的问题。马上做了一些优化，pm2启用多线程，页面缓存，接口缓存。​学习node是非常必要的，本文是结合demo学习记录的笔记，略为简略。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="node学习笔记">
+<meta property="og:url" content="http://example.com/2021/04/node-study-notes/index.html">
+<meta property="og:site_name" content="Roya&#39;s blog">
+<meta property="og:description" content="前言公司官网要做seo，选用了nuxt框架。压测导致系统崩溃，虽然主因在后台接口，但也暴露出了C端的问题。马上做了一些优化，pm2启用多线程，页面缓存，接口缓存。​学习node是非常必要的，本文是结合demo学习记录的笔记，略为简略。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-04-20T03:00:14.000Z">
+<meta property="article:author" content="Roya">
+<meta property="article:tag" content="node">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2021/04/node-study-notes/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>node学习笔记 | Roya's blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Roya's blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/04/node-study-notes/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpeg">
+      <meta itemprop="name" content="Roya">
+      <meta itemprop="description" content="Web Developer">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Roya's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          node学习笔记
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-04-20 11:00:14" itemprop="dateCreated datePublished" datetime="2021-04-20T11:00:14+08:00">2021-04-20</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/node/" itemprop="url" rel="index"><span itemprop="name">node</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>公司官网要做seo，选用了nuxt框架。压测导致系统崩溃，虽然主因在后台接口，但也暴露出了C端的问题。马上做了一些优化，pm2启用多线程，页面缓存，接口缓存。<br>​<br>学习node是非常必要的，本文是结合demo学习记录的笔记，略为简略。</p>
+<span id="more"></span>
+
+<h1 id="一、http"><a href="#一、http" class="headerlink" title="一、http"></a>一、http</h1><h2 id="http请求概述"><a href="#http请求概述" class="headerlink" title="http请求概述"></a>http请求概述</h2><ul>
+<li>DNS解析（域名解析成IP），建立TCP连接（三次握手），发送http请求</li>
+<li>server接收到http请求，处理，并返回</li>
+<li>客户端接收到返回数据，处理数据（如渲染页面，执行js）</li>
+</ul>
+<p><strong>get请求</strong>，通过querystring来传递数据，如a.html?a=100&amp;b=200<br>浏览器直接访问，就发送get请求</p>
+<p><strong>post请求</strong></p>
+<p>node自带模块 http、querystring</p>
+<h1 id="二、"><a href="#二、" class="headerlink" title="二、"></a>二、</h1><p>使用nodemon检测文件变化，自动重启node<br>使用corss-env设置环境变量，兼容mac linux 和 windows</p>
+<h1 id="三、存储"><a href="#三、存储" class="headerlink" title="三、存储"></a>三、存储</h1><h2 id="cookie"><a href="#cookie" class="headerlink" title="cookie"></a>cookie</h2><ul>
+<li>存储在浏览器的一段字符串（最大5kb）</li>
+<li>跨域不共享</li>
+<li>格式如 k1=v1; k2=v2; k3=v3; 因此可以存储结构化数据</li>
+<li>每次发送 http 请求，会将请求域的 cookie 一起发送给 server</li>
+<li>server 可以修改 cookie 并返回给浏览器</li>
+<li>浏览器也可以通过 js 修改 cookie（有限制）</li>
+</ul>
+<h2 id="用session存储数据的问题"><a href="#用session存储数据的问题" class="headerlink" title="用session存储数据的问题"></a>用session存储数据的问题</h2><ul>
+<li>当前代码的 session 就是js变量，放在nodejs进程内存中</li>
+<li>第一，进程内存有限，访问量过大，内存暴增怎么办？</li>
+<li>第二，正式上线运行是多线程，进程之间内存无法共享 （也可能多机器多集群）</li>
+</ul>
+<h2 id="解决方案redis"><a href="#解决方案redis" class="headerlink" title="解决方案redis"></a>解决方案redis</h2><ul>
+<li>web server 最常用的存储数据库，数据存放在内存中</li>
+<li>相比于 mysql，访问速度快（内存和硬盘不是一个数量级的）</li>
+<li>但是成本更高，可存储的数据量更小（内存的硬伤）</li>
+<li>将web server 和 redis 拆分成两个单独的服务</li>
+<li>双方都是独立的，都是可扩展的（例如都扩展成集群）</li>
+<li>（包括 mysql，也是一个单独的服务，也可扩展 ）</li>
+</ul>
+<h2 id="为何session适合redis"><a href="#为何session适合redis" class="headerlink" title="为何session适合redis"></a>为何session适合redis</h2><ul>
+<li>session 访问频繁，对性能要求极高</li>
+<li>session 可不考虑断电丢失数据的问题（内存的硬伤）</li>
+<li>session 数据量不会太大（相比于 mysql 中存储的数据）</li>
+</ul>
+<h2 id="为何网站数据不适合用redis？"><a href="#为何网站数据不适合用redis？" class="headerlink" title="为何网站数据不适合用redis？"></a>为何网站数据不适合用redis？</h2><ul>
+<li>操作频率不是太高（相比于 session 操作）</li>
+<li>断电不能丢失，必须保留</li>
+<li>数据量太大，内存成本太高</li>
+</ul>
+<p>redis-server<br>redis-cli</p>
+<h1 id="四、nginx"><a href="#四、nginx" class="headerlink" title="四、nginx"></a>四、nginx</h1><ul>
+<li>高性能的 web 服务器，开源免费</li>
+<li>一般用于静态服务，负载均衡</li>
+<li>反向代理</li>
+</ul>
+<p><strong>nginx命令</strong></p>
+<ul>
+<li>测试配置文件格式是否正确 nginx -t</li>
+<li>启动 nginx ； 重启 nginx -s reload</li>
+<li>停止 nginx -s stop</li>
+</ul>
+<p>mac</p>
+<blockquote>
+<p>sudo vi /usr/local/etc/nginx/nginx.conf</p>
+</blockquote>
+<h1 id="五、日志"><a href="#五、日志" class="headerlink" title="五、日志"></a>五、日志</h1><ol>
+<li>第一，访问日志 access log（ server 端最重要的日志）</li>
+<li>第二，自定义日志（包括自定义事件，错误记录等）</li>
+</ol>
+<h2 id="IO操作的性能瓶颈"><a href="#IO操作的性能瓶颈" class="headerlink" title="IO操作的性能瓶颈"></a>IO操作的性能瓶颈</h2><ul>
+<li>IO 包括“网络IO”和“文件IO”</li>
+<li>相比于 CPU 计算和内存读写，IO 的突出特点就是 慢</li>
+<li>如何在有限的硬件资源下提高 IO 的操作效率？</li>
+</ul>
+<h2 id="日志拆分"><a href="#日志拆分" class="headerlink" title="日志拆分"></a>日志拆分</h2><p><strong>crontab设置定时任务</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">crontab -e</span><br><span class="line">// 编辑， 每日零点执行</span><br><span class="line">// * 0 * * * /Users/wfp/Project/video-tutorial/node-tutorial/code-demo/blog-1/src/utils/copy.sh</span><br><span class="line">crontab -l</span><br></pre></td></tr></table></figure>
+<h2 id="日志分析"><a href="#日志分析" class="headerlink" title="日志分析"></a>日志分析</h2><ul>
+<li>如针对 access.log 日志，分析 chrome 的占比</li>
+<li>日志是按行存储的，一行就是一条日志</li>
+<li>使用 nodejs 的 readline (基于 stream，效率高)</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li>IO性能瓶颈，使用 stream 提高性能</li>
+<li>使用 crontab 拆分日志文件，使用 readline 分析日志内容</li>
+</ul>
+<h1 id="六、安全"><a href="#六、安全" class="headerlink" title="六、安全"></a>六、安全</h1><p>server 端攻击方式非常多，预防手段也非常多。这里就讲几种常见的，能通过 <strong>web server（nodejs</strong>）层面预约的。<br>有些攻击需要<strong>硬件和服务</strong>来支持（需要OP支持），如DDOS</p>
+<ol>
+<li>sql 注入： 窃取数据库内容</li>
+<li>xss攻击：窃取前端的 cookie 内容</li>
+<li>密码加密: 保障用户信息安全(重要)</li>
+</ol>
+<h2 id="sql-注入"><a href="#sql-注入" class="headerlink" title="sql 注入"></a>sql 注入</h2><ul>
+<li>最原始、最简单的攻击，从有了 web2.0 就有了 sql 注入攻击</li>
+<li>攻击方式:  输入一个 sql 片段，最终形成一段攻击代码</li>
+<li>预防措施：使用 mysql 的 escape 函数处理输入内容即可<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> sql = <span class="string">`select username, realname from user where username=&#x27;<span class="subst">$&#123;username&#125;</span>&#x27; and password=&#x27;<span class="subst">$&#123;password&#125;</span>&#x27;;`</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// name 如果输入 Roya&#x27; --</span></span><br><span class="line"><span class="comment">// 最后生成的sql语句如下，后面的条件就被注释了</span></span><br><span class="line"><span class="comment">// select username, realname from user where username=&#x27;Roya&#x27; --&#x27; and password=&#x27;12346&#x27;;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 预防 escape</span></span><br><span class="line"> username = <span class="built_in">escape</span>(username)</span><br><span class="line"> password = <span class="built_in">escape</span>(password)</span><br><span class="line"> <span class="keyword">const</span> sql = <span class="string">`select username, realname from user where username=<span class="subst">$&#123;username&#125;</span> and password=<span class="subst">$&#123;password&#125;</span>;`</span></span><br><span class="line"> <span class="comment">// select username, realname from user where username=&#x27;Roya\&#x27; -- &#x27; and password=&#x27;12346&#x27;;</span></span><br></pre></td></tr></table></figure></li>
+</ul>
+<h2 id="XSS攻击"><a href="#XSS攻击" class="headerlink" title="XSS攻击"></a>XSS攻击</h2><ul>
+<li>攻击方式：在页面展示内容中掺杂 js 代码，以获取网页信息</li>
+<li>防御方式：转换特殊符号（xss）</li>
+</ul>
+<h2 id="密码加密"><a href="#密码加密" class="headerlink" title="密码加密"></a>密码加密</h2><ul>
+<li>万一数据库被用户攻破，最不该泄漏的就是用户信息</li>
+<li>用户密码md5加密</li>
+</ul>
+<h1 id="七、server和前端的区别"><a href="#七、server和前端的区别" class="headerlink" title="七、server和前端的区别"></a>七、server和前端的区别</h1><ol>
+<li>服务器稳定性</li>
+<li>内存CPU（优化 扩展）</li>
+<li>日志记录</li>
+<li>安全（包括登陆验证）</li>
+<li>集群和服务拆分</li>
+</ol>
+<h1 id="八、express"><a href="#八、express" class="headerlink" title="八、express"></a>八、express</h1><p>登录 使用express-session和connect-redis<br>日志 使用脚手架推荐的 morgan</p>
+<h1 id="九、线上环境"><a href="#九、线上环境" class="headerlink" title="九、线上环境"></a>九、线上环境</h1><ul>
+<li>服务器稳定性</li>
+<li>充分利用服务器硬件资源，以便提高性能</li>
+<li>线上日志记录</li>
+</ul>
+<h2 id="PM2"><a href="#PM2" class="headerlink" title="PM2"></a>PM2</h2><ul>
+<li>进程守护，系统崩溃<strong>自动重启</strong></li>
+<li>启动<strong>多进程</strong>，充分利用CPU和内存</li>
+<li>自带日志记录功能</li>
+</ul>
+<p>常用命令</p>
+<ul>
+<li>pm2 start … , pm2 list</li>
+<li>pm2 restart <AppName>/<id></li>
+<li>pm2 stop <AppName>/<id>,  pm2 delete <AppName>/<id></li>
+<li>pm2 info <AppName>/<id></li>
+<li>pm2 log <AppName>/<id></li>
+<li>pm2 monit <AppName>/<id></li>
+</ul>
+<p>配置</p>
+<ul>
+<li>新建 PM2 配置文件（包括进程数量，日志文件目录等）</li>
+<li>修改 PM2 启动命令，重启</li>
+<li>访问 server，检查日志文件的内容（日志记录是否生效）</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/node/" rel="tag"><i class="fa fa-tag"></i> node</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/02/hexo-build-blog/" rel="prev" title="hexo+github博客搭建">
+      <i class="fa fa-chevron-left"></i> hexo+github博客搭建
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/05/light-house-performance-analysis/" rel="next" title="使用light house对m站进行性能分析">
+      使用light house对m站进行性能分析 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E3%80%81http"><span class="nav-number">2.</span> <span class="nav-text">一、http</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#http%E8%AF%B7%E6%B1%82%E6%A6%82%E8%BF%B0"><span class="nav-number">2.1.</span> <span class="nav-text">http请求概述</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8C%E3%80%81"><span class="nav-number">3.</span> <span class="nav-text">二、</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E5%AD%98%E5%82%A8"><span class="nav-number">4.</span> <span class="nav-text">三、存储</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#cookie"><span class="nav-number">4.1.</span> <span class="nav-text">cookie</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8session%E5%AD%98%E5%82%A8%E6%95%B0%E6%8D%AE%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">4.2.</span> <span class="nav-text">用session存储数据的问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88redis"><span class="nav-number">4.3.</span> <span class="nav-text">解决方案redis</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BD%95session%E9%80%82%E5%90%88redis"><span class="nav-number">4.4.</span> <span class="nav-text">为何session适合redis</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BD%95%E7%BD%91%E7%AB%99%E6%95%B0%E6%8D%AE%E4%B8%8D%E9%80%82%E5%90%88%E7%94%A8redis%EF%BC%9F"><span class="nav-number">4.5.</span> <span class="nav-text">为何网站数据不适合用redis？</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9B%9B%E3%80%81nginx"><span class="nav-number">5.</span> <span class="nav-text">四、nginx</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E6%97%A5%E5%BF%97"><span class="nav-number">6.</span> <span class="nav-text">五、日志</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#IO%E6%93%8D%E4%BD%9C%E7%9A%84%E6%80%A7%E8%83%BD%E7%93%B6%E9%A2%88"><span class="nav-number">6.1.</span> <span class="nav-text">IO操作的性能瓶颈</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%A5%E5%BF%97%E6%8B%86%E5%88%86"><span class="nav-number">6.2.</span> <span class="nav-text">日志拆分</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90"><span class="nav-number">6.3.</span> <span class="nav-text">日志分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">6.4.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E5%AE%89%E5%85%A8"><span class="nav-number">7.</span> <span class="nav-text">六、安全</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#sql-%E6%B3%A8%E5%85%A5"><span class="nav-number">7.1.</span> <span class="nav-text">sql 注入</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#XSS%E6%94%BB%E5%87%BB"><span class="nav-number">7.2.</span> <span class="nav-text">XSS攻击</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%86%E7%A0%81%E5%8A%A0%E5%AF%86"><span class="nav-number">7.3.</span> <span class="nav-text">密码加密</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%83%E3%80%81server%E5%92%8C%E5%89%8D%E7%AB%AF%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">8.</span> <span class="nav-text">七、server和前端的区别</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%AB%E3%80%81express"><span class="nav-number">9.</span> <span class="nav-text">八、express</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B9%9D%E3%80%81%E7%BA%BF%E4%B8%8A%E7%8E%AF%E5%A2%83"><span class="nav-number">10.</span> <span class="nav-text">九、线上环境</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#PM2"><span class="nav-number">10.1.</span> <span class="nav-text">PM2</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Roya"
+      src="/images/avatar.jpeg">
+  <p class="site-author-name" itemprop="name">Roya</p>
+  <div class="site-description" itemprop="description">Web Developer</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Rouhui" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Rouhui" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:bighuiaaa@126.com" title="E-Mail → mailto:bighuiaaa@126.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Roya</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

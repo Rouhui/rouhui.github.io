@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="实现html转图片并长按保存">
+<meta property="og:type" content="article">
+<meta property="og:title" content="html2canvas">
+<meta property="og:url" content="http://example.com/2020/07/html2canvas/index.html">
+<meta property="og:site_name" content="Roya&#39;s blog">
+<meta property="og:description" content="实现html转图片并长按保存">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-07-05T16:00:00.000Z">
+<meta property="article:author" content="Roya">
+<meta property="article:tag" content="html2canvas">
+<meta property="article:tag" content="h5">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2020/07/html2canvas/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>html2canvas | Roya's blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Roya's blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2020/07/html2canvas/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpeg">
+      <meta itemprop="name" content="Roya">
+      <meta itemprop="description" content="Web Developer">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Roya's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          html2canvas
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-07-06 00:00:00" itemprop="dateCreated datePublished" datetime="2020-07-06T00:00:00+08:00">2020-07-06</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/h5/" itemprop="url" rel="index"><span itemprop="name">h5</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>实现html转图片并长按保存</p>
+</blockquote>
+<span id="more"></span>
+
+<h1 id="在vue中如何使用"><a href="#在vue中如何使用" class="headerlink" title="在vue中如何使用"></a>在vue中如何使用</h1><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">&lt;template&gt;</span><br><span class="line">	&lt;div ref=&quot;imageWrapper&quot;&gt;</span><br><span class="line">  	&lt;button @click=&quot;convertToImage&quot;&gt;生成截图&lt;/button&gt;</span><br><span class="line">  &lt;/div&gt;</span><br><span class="line">&lt;/template&gt;</span><br><span class="line"></span><br><span class="line">&lt;script&gt;</span><br><span class="line">import html2canvas from &quot;html2canvas&quot;</span><br><span class="line">export default &#123;</span><br><span class="line">	methods: &#123;</span><br><span class="line">  	convertToImage() &#123;</span><br><span class="line">      // vue中用ref来指定你需要截屏的dom</span><br><span class="line">    	html2canvas(this.$refs.imageWrapper).then(canvas =&gt; &#123;</span><br><span class="line">      	let dataURL = canvas.toDataURL(&quot;image/png&quot;)</span><br><span class="line">        this.imgUrl = dataURL</span><br><span class="line">      &#125;)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line">&lt;/script&gt;</span><br></pre></td></tr></table></figure>
+<hr>
+<h1 id="可能出现的问题及相应解决方案"><a href="#可能出现的问题及相应解决方案" class="headerlink" title="可能出现的问题及相应解决方案"></a>可能出现的问题及相应解决方案</h1><h2 id="①-背景图片模糊"><a href="#①-背景图片模糊" class="headerlink" title="① 背景图片模糊"></a>① 背景图片模糊</h2><p>使用<code>&lt;img&gt;</code>标签替换背景图片</p>
+<h2 id="②-图片不显示问题"><a href="#②-图片不显示问题" class="headerlink" title="② 图片不显示问题"></a>② 图片不显示问题</h2><p>有时你可能莫名其妙地发现有些图片并没有出现在导出的图片中，这基本上就是因为图片素材出现跨域，也就是说图片所在的域名与你项目所在域名不一致。这个问题的解决方案就是<code>html2canvas</code>使用时多加以下两个配置项就好了。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">new</span> html2canvas(<span class="built_in">this</span>.$refs.poster, &#123;</span><br><span class="line">  <span class="attr">allowTaint</span>: <span class="literal">true</span>,</span><br><span class="line">  <span class="attr">useCORS</span>: <span class="literal">true</span> </span><br><span class="line">&#125;).then(<span class="function"><span class="params">canvas</span> =&gt;</span> &#123;</span><br><span class="line">   <span class="comment">// ……</span></span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<h2 id="③-生成背景透明的png"><a href="#③-生成背景透明的png" class="headerlink" title="③ 生成背景透明的png"></a>③ 生成背景透明的png</h2><p><code>html2canvas</code>生成的canvas背景颜色默认是白色，如果用到透明的PNG图片作为背景图或者设置了圆角，需要设置背景透明</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">new</span> html2canvas(<span class="built_in">this</span>.$refs.poster, &#123;</span><br><span class="line">  <span class="attr">backgroundColor</span>: <span class="string">&quot;transparent&quot;</span></span><br><span class="line">&#125;).then(<span class="function"><span class="params">canvas</span> =&gt;</span> &#123;</span><br><span class="line">   <span class="comment">// ……</span></span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<h2 id="④-在iOS系统部分浏览器中，用br标签进行文字换行时，文本只显示第一行的问题"><a href="#④-在iOS系统部分浏览器中，用br标签进行文字换行时，文本只显示第一行的问题" class="headerlink" title="④ 在iOS系统部分浏览器中，用br标签进行文字换行时，文本只显示第一行的问题"></a>④ 在iOS系统部分浏览器中，用br标签进行文字换行时，文本只显示第一行的问题</h2><p>这种现象并不是必现的，但确实存在这样的问题，这时解决问题的方式也很简单，就是不用<code>&lt;br&gt;</code>标签来换行，而是采用其他块级标签元素对需要进行换行的文字分别包裹即可。</p>
+<h2 id="⑤-某些手机删除线无法显示"><a href="#⑤-某些手机删除线无法显示" class="headerlink" title="⑤ 某些手机删除线无法显示"></a>⑤ 某些手机删除线无法显示</h2><p>之前看到别人出现的情况是删除线位置偏下，我出现的问题是有些机型删除线完全消失了。应该是html2canvas本身对一些css属性兼容问题，可以参考html2canvas官网。<br>解决方法也比较简单，自己实现一个删除线即可。</p>
+<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-class">.price</span><span class="selector-pseudo">::after</span>&#123;</span><br><span class="line">  <span class="attribute">content</span>: <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">  <span class="attribute">width</span>: <span class="number">100%</span>;</span><br><span class="line">  <span class="attribute">height</span>: <span class="number">0</span>;</span><br><span class="line">  <span class="attribute">border-bottom</span>: <span class="number">1.5px</span> solid <span class="built_in">rgba</span>(<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>, <span class="number">0.7</span>);</span><br><span class="line">  <span class="attribute">position</span>: absolute;</span><br><span class="line">  <span class="attribute">left</span>: <span class="number">0</span>;</span><br><span class="line">  <span class="attribute">top</span>: <span class="number">50%</span>;</span><br><span class="line">  <span class="attribute">transform</span>: <span class="built_in">translateY</span>(-<span class="number">50%</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="⑥多行文本省略号无法显示"><a href="#⑥多行文本省略号无法显示" class="headerlink" title="⑥多行文本省略号无法显示"></a>⑥多行文本省略号无法显示</h2><p>应该是对css属性的兼容问题。因为在移动端，就算是不同屏幕，显示的字数也差不多，所以可以数一下大概几个字，超出就用js截断，然后加上省略号。如果不强求的话就直接<code>overflow:hidden</code>截断就好了。</p>
+<hr>
+<h1 id="清晰度优化"><a href="#清晰度优化" class="headerlink" title="清晰度优化"></a>清晰度优化</h1><h2 id="①使用px单位"><a href="#①使用px单位" class="headerlink" title="①使用px单位"></a>①使用px单位</h2><p>为了给到<code>html2canvas</code>明确的整数计算值，避免因小数舍入而导致的拉伸模糊，建议将布局中使用中使用<code>%</code>、<code>vw</code>、<code>vh</code>或<code>rem</code>等单位的元素样式，统一改为使用<code>px</code>。<br>实际使用中出现了海报背景图底部出现白边的问题，单位从rem改为px能解决问题</p>
+<h2 id="②优先使用-img-标签展示图片"><a href="#②优先使用-img-标签展示图片" class="headerlink" title="②优先使用 img 标签展示图片"></a>②优先使用 img 标签展示图片</h2><p>很多情况下，导出图片模糊是由原视图中的图片是以 css 中 background 的方式显示的。<br>因为 background-size 并不会反馈一个具体的宽高数值，而是通过枚举值如 contain、cover 等代表图片缩放的类型；相对于<code>&lt;img&gt;</code>标签， background 方式最终生成的图片会较为模糊。<br>将 background 改为<code>&lt;img&gt;</code>方式呈现，对于图片清晰度会有一定的改观。对于必须要使用 background 的场景，参见 5.25 节的解决方案。</p>
+<hr>
+<h1 id="重点总结"><a href="#重点总结" class="headerlink" title="重点总结"></a>重点总结</h1><blockquote>
+<p>① 生成图片的HTML尽量使用<code>&lt;img&gt;</code>而不使用背景图<br>② <code>&#123; allowTaint: true, useCORS: true &#125;</code>可解决跨域图片不显示问题<br>③ <code>&#123; backgroundColor: &quot;transparent&quot; &#125;</code>可解决图片不透明问题</p>
+</blockquote>
+<p>参考链接：<br><a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000021275782">高质量前端快照方案：来自页面的「自拍」</a><br><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/abd9e9c5ba20">html2canvas.js——HTML转Canvas工具</a></p>
+<hr>
+<h1 id="2020-7-23更新"><a href="#2020-7-23更新" class="headerlink" title="2020.7.23更新"></a>2020.7.23更新</h1><h2 id="线上bug：ios反馈生成海报无效"><a href="#线上bug：ios反馈生成海报无效" class="headerlink" title="线上bug：ios反馈生成海报无效"></a>线上bug：ios反馈生成海报无效</h2><p><strong>问题定位：</strong> <a target="_blank" rel="noopener" href="https://developers.weixin.qq.com/community/develop/doc/00006eee95488060bb1ac5bd85b000?highLine=html2canvas">在ios 13.4中，微信浏览器使用html2canvas无任何反馈</a></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">// ios 13.4 微信浏览器</span><br><span class="line">html2canvas(shareContent as HTMLElement, opts).then(canvas =&gt; &#123;</span><br><span class="line">  // 无反馈</span><br><span class="line">&#125;).catch(_ =&gt; &#123;</span><br><span class="line">  // 无反馈</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">// 在ios 非13.4系统微信浏览器中</span><br><span class="line">html2canvas(shareContent as HTMLElement, opts).then(canvas =&gt; &#123;</span><br><span class="line">  // 有反馈</span><br><span class="line">&#125;).catch(_ =&gt; &#123;</span><br><span class="line">  // 有反馈</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<p><strong>解决方案：</strong> html2canvas 版本回退到rc.4</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/html2canvas/" rel="tag"><i class="fa fa-tag"></i> html2canvas</a>
+              <a href="/tags/h5/" rel="tag"><i class="fa fa-tag"></i> h5</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/03/uniapp-build-h5-record/" rel="prev" title="uniapp打包h5问题记录">
+      <i class="fa fa-chevron-left"></i> uniapp打包h5问题记录
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/07/wechat-official-account-record/" rel="next" title="公众号h5开发问题记录">
+      公众号h5开发问题记录 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%A8vue%E4%B8%AD%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8"><span class="nav-number">1.</span> <span class="nav-text">在vue中如何使用</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%AF%E8%83%BD%E5%87%BA%E7%8E%B0%E7%9A%84%E9%97%AE%E9%A2%98%E5%8F%8A%E7%9B%B8%E5%BA%94%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">2.</span> <span class="nav-text">可能出现的问题及相应解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E2%91%A0-%E8%83%8C%E6%99%AF%E5%9B%BE%E7%89%87%E6%A8%A1%E7%B3%8A"><span class="nav-number">2.1.</span> <span class="nav-text">① 背景图片模糊</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E2%91%A1-%E5%9B%BE%E7%89%87%E4%B8%8D%E6%98%BE%E7%A4%BA%E9%97%AE%E9%A2%98"><span class="nav-number">2.2.</span> <span class="nav-text">② 图片不显示问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E2%91%A2-%E7%94%9F%E6%88%90%E8%83%8C%E6%99%AF%E9%80%8F%E6%98%8E%E7%9A%84png"><span class="nav-number">2.3.</span> <span class="nav-text">③ 生成背景透明的png</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E2%91%A3-%E5%9C%A8iOS%E7%B3%BB%E7%BB%9F%E9%83%A8%E5%88%86%E6%B5%8F%E8%A7%88%E5%99%A8%E4%B8%AD%EF%BC%8C%E7%94%A8br%E6%A0%87%E7%AD%BE%E8%BF%9B%E8%A1%8C%E6%96%87%E5%AD%97%E6%8D%A2%E8%A1%8C%E6%97%B6%EF%BC%8C%E6%96%87%E6%9C%AC%E5%8F%AA%E6%98%BE%E7%A4%BA%E7%AC%AC%E4%B8%80%E8%A1%8C%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">2.4.</span> <span class="nav-text">④ 在iOS系统部分浏览器中，用br标签进行文字换行时，文本只显示第一行的问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E2%91%A4-%E6%9F%90%E4%BA%9B%E6%89%8B%E6%9C%BA%E5%88%A0%E9%99%A4%E7%BA%BF%E6%97%A0%E6%B3%95%E6%98%BE%E7%A4%BA"><span class="nav-number">2.5.</span> <span class="nav-text">⑤ 某些手机删除线无法显示</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E2%91%A5%E5%A4%9A%E8%A1%8C%E6%96%87%E6%9C%AC%E7%9C%81%E7%95%A5%E5%8F%B7%E6%97%A0%E6%B3%95%E6%98%BE%E7%A4%BA"><span class="nav-number">2.6.</span> <span class="nav-text">⑥多行文本省略号无法显示</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B8%85%E6%99%B0%E5%BA%A6%E4%BC%98%E5%8C%96"><span class="nav-number">3.</span> <span class="nav-text">清晰度优化</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E2%91%A0%E4%BD%BF%E7%94%A8px%E5%8D%95%E4%BD%8D"><span class="nav-number">3.1.</span> <span class="nav-text">①使用px单位</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E2%91%A1%E4%BC%98%E5%85%88%E4%BD%BF%E7%94%A8-img-%E6%A0%87%E7%AD%BE%E5%B1%95%E7%A4%BA%E5%9B%BE%E7%89%87"><span class="nav-number">3.2.</span> <span class="nav-text">②优先使用 img 标签展示图片</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%87%8D%E7%82%B9%E6%80%BB%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">重点总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#2020-7-23%E6%9B%B4%E6%96%B0"><span class="nav-number">5.</span> <span class="nav-text">2020.7.23更新</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BA%BF%E4%B8%8Abug%EF%BC%9Aios%E5%8F%8D%E9%A6%88%E7%94%9F%E6%88%90%E6%B5%B7%E6%8A%A5%E6%97%A0%E6%95%88"><span class="nav-number">5.1.</span> <span class="nav-text">线上bug：ios反馈生成海报无效</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Roya"
+      src="/images/avatar.jpeg">
+  <p class="site-author-name" itemprop="name">Roya</p>
+  <div class="site-description" itemprop="description">Web Developer</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Rouhui" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Rouhui" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:bighuiaaa@126.com" title="E-Mail → mailto:bighuiaaa@126.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Roya</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

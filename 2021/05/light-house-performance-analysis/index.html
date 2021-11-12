@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="前言谈到性能优化，我们时常会想到：  压缩外部资源 对JavaScript进行分包 对各种外部资源进行懒加载 请求链路上的优化（缓存，cdn，http2诸如此类）  但是说这么多的优化手段，我们到底在优化什么？加载时间是多少才算作快？用什么作为我们优化的参照物呢？ 当我们接收到一个性能优化的任务，用什么去衡量成果？ 今天主要借助 lighthouse 对网站整体进行评估，针对 lighthouse">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用light house对m站进行性能分析">
+<meta property="og:url" content="http://example.com/2021/05/light-house-performance-analysis/index.html">
+<meta property="og:site_name" content="Roya&#39;s blog">
+<meta property="og:description" content="前言谈到性能优化，我们时常会想到：  压缩外部资源 对JavaScript进行分包 对各种外部资源进行懒加载 请求链路上的优化（缓存，cdn，http2诸如此类）  但是说这么多的优化手段，我们到底在优化什么？加载时间是多少才算作快？用什么作为我们优化的参照物呢？ 当我们接收到一个性能优化的任务，用什么去衡量成果？ 今天主要借助 lighthouse 对网站整体进行评估，针对 lighthouse">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2021/05/light-house-performance-analysis/image01.png">
+<meta property="og:image" content="http://example.com/2021/05/light-house-performance-analysis/image02.png">
+<meta property="og:image" content="http://example.com/2021/05/light-house-performance-analysis/image03.png">
+<meta property="og:image" content="http://example.com/2021/05/light-house-performance-analysis/image04.png">
+<meta property="og:image" content="http://example.com/2021/05/light-house-performance-analysis/image05.png">
+<meta property="og:image" content="http://example.com/2021/05/light-house-performance-analysis/image06.png">
+<meta property="og:image" content="http://example.com/2021/05/light-house-performance-analysis/image07.png">
+<meta property="og:image" content="http://example.com/2021/05/light-house-performance-analysis/image08.png">
+<meta property="og:image" content="http://example.com/2021/05/light-house-performance-analysis/image09.png">
+<meta property="og:image" content="http://example.com/2021/05/light-house-performance-analysis/image10.png">
+<meta property="og:image" content="http://example.com/2021/05/light-house-performance-analysis/image11.png">
+<meta property="og:image" content="http://example.com/2021/05/light-house-performance-analysis/image12.png">
+<meta property="og:image" content="http://example.com/2021/05/light-house-performance-analysis/image13.png">
+<meta property="article:published_time" content="2021-05-23T16:00:00.000Z">
+<meta property="article:author" content="Roya">
+<meta property="article:tag" content="性能分析">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2021/05/light-house-performance-analysis/image01.png">
+
+<link rel="canonical" href="http://example.com/2021/05/light-house-performance-analysis/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>使用light house对m站进行性能分析 | Roya's blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Roya's blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/05/light-house-performance-analysis/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpeg">
+      <meta itemprop="name" content="Roya">
+      <meta itemprop="description" content="Web Developer">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Roya's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          使用light house对m站进行性能分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-05-24 00:00:00" itemprop="dateCreated datePublished" datetime="2021-05-24T00:00:00+08:00">2021-05-24</time>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>谈到性能优化，我们时常会想到：</p>
+<ul>
+<li>压缩外部资源</li>
+<li>对JavaScript进行分包</li>
+<li>对各种外部资源进行懒加载</li>
+<li>请求链路上的优化（缓存，cdn，http2诸如此类）</li>
+</ul>
+<p>但是说这么多的优化手段，我们到底在优化什么？加载时间是多少才算作快？用什么作为我们优化的参照物呢？ 当我们接收到一个性能优化的任务，用什么去衡量成果？</p>
+<p>今天主要借助 lighthouse 对网站整体进行评估，针对 lighthouse 给出的完善建议，做一些优化。</p>
+<span id="more"></span>
+
+<h2 id="lighthouse面板"><a href="#lighthouse面板" class="headerlink" title="lighthouse面板"></a>lighthouse面板</h2><p><img src="image01.png" alt="image.png"></p>
+<p><strong>「First Contentful Paint」</strong> 首屏渲染时间，Chrome会取第一个渲染出来的元素作为时间参考。<br><strong>「Time to Interactive</strong> 」页面资源加载成功并能响应用户交互的时间点<br><strong>「Speed Index」</strong> 首屏展现时间<br><strong>「Total Blocking Time</strong>」FCP到TTI之间,主线程被long task(超过50ms)阻塞的时间之和<br><strong>「Largest Contentful Paint」</strong> 页面中最大内容元素渲染的时间点。<br><strong>「Cumulative Layout Shift</strong> 」元素移动所累积的时间点，比如有一个absolute的元素突然从左边移到了右边。</p>
+<h2 id="Core-Web-Vitals"><a href="#Core-Web-Vitals" class="headerlink" title="Core Web Vitals"></a>Core Web Vitals</h2><p>谈到用户体验与性能指标,顺便提下Core Web Vitals. 2020年5月,Google针对网站使用体验推出了一套核心指标标准(Core Web Vitals).由三项指标构成:<br><img src="image02.png" alt="image.png"><br>为什么不是别的指标呢 ? 因为这套标准主要从以下三个维度进行评估:</p>
+<ul>
+<li>[加载情况] : LCP</li>
+<li>[交互性] : FID</li>
+<li>[视觉稳定性] : CLS</li>
+</ul>
+<h2 id="改善建议"><a href="#改善建议" class="headerlink" title="改善建议"></a>改善建议</h2><p>方案就主要以性能指标作为维度,主要分为以下几个点:</p>
+<ul>
+<li>视觉稳定性 (Cumulative Layout Shift)</li>
+<li>加载情况 (Largest Contentful Paint)</li>
+<li>TTI (Time to Interactive)</li>
+<li>TBT (Total Blocking Time)</li>
+<li>FCP (First Contentful Paint)</li>
+</ul>
+<h3 id="1-视觉稳定性-Cumulative-Layout-Shift"><a href="#1-视觉稳定性-Cumulative-Layout-Shift" class="headerlink" title="1. 视觉稳定性 (Cumulative Layout Shift)"></a>1. 视觉稳定性 (Cumulative Layout Shift)</h3><h4 id="1-1-优化未设置尺寸的图片元素"><a href="#1-1-优化未设置尺寸的图片元素" class="headerlink" title="1.1 优化未设置尺寸的图片元素"></a>1.1 优化未设置尺寸的图片元素</h4><blockquote>
+<p>改善建议里提到了一项优先级很高的优化就是为图片元素设置显式的宽度和高度,从而减少布局偏移和改善CLS.</p>
+</blockquote>
+<p><img src="image03.png" alt="image.png"></p>
+<h4 id=""><a href="#" class="headerlink" title=""></a></h4><h4 id="1-2-避免页面布局发生偏移"><a href="#1-2-避免页面布局发生偏移" class="headerlink" title="1.2 避免页面布局发生偏移"></a>1.2 避免页面布局发生偏移</h4><p><img src="image04.png" alt="image.png"></p>
+<h4 id="1-3-避免非合成动画"><a href="#1-3-避免非合成动画" class="headerlink" title="1.3 避免非合成动画"></a>1.3 避免非合成动画</h4><p><img src="image05.png" alt="image.png"></p>
+<blockquote>
+<p>改善建议中提到应避免使用非合成动画，非合成动画会使得页面变得混乱并增加CLS。关于这个优化建议我觉得应该具体场景具体分析，不应该”因噎废食”。毕竟目前能被composited的css属性只有transform &amp; opacity。当然这也在提醒我们平时在做CSS动画时应注意优化 (比如常见的使用transform替代top)。</p>
+</blockquote>
+<p>参考资料：</p>
+<ul>
+<li>​<a target="_blank" rel="noopener" href="https://web.dev/non-composited-animations/?utm_source=lighthouse&utm_medium=lr">为什么建议避免非合成动画</a></li>
+<li>​<a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_40028324/article/details/102580363">浏览器性能优化</a></li>
+</ul>
+<h3 id="2-加载情况-Largest-Contentful-Paint"><a href="#2-加载情况-Largest-Contentful-Paint" class="headerlink" title="2. 加载情况 (Largest Contentful Paint)"></a>2. 加载情况 (Largest Contentful Paint)</h3><h4 id="2-1-消除渲染堵塞的资源"><a href="#2-1-消除渲染堵塞的资源" class="headerlink" title="2.1 消除渲染堵塞的资源"></a>2.1 消除渲染堵塞的资源</h4><p><img src="image06.png" alt="image.png"><br>第一个是高德地图的js sdk，改成在需要的页面动态添加script标签引入这个js。<br>如果是全局使用的文件，也可以考虑defer进行异步加载。</p>
+<h4 id="2-2-移除未使用的-CSS-JavaScript"><a href="#2-2-移除未使用的-CSS-JavaScript" class="headerlink" title="2.2 移除未使用的 CSS/JavaScript"></a>2.2 移除未使用的 CSS/JavaScript</h4><blockquote>
+<p>考虑一下按需引入和CDN</p>
+</blockquote>
+<p><img src="image07.png" alt="image.png"><br>查看了几个css文件后，都有一段设置间距的公共样式。排查发现，这段样式写在mixin里，几乎被所有组件引用。<br><img src="image08.png" alt="image.png"><br>解决方案： 移至全局样式文件 index.scss</p>
+<h3 id="3-TBT-Total-Blocking-Time-TTI-Time-to-Interactive"><a href="#3-TBT-Total-Blocking-Time-TTI-Time-to-Interactive" class="headerlink" title="3. TBT (Total Blocking Time) / TTI (Time to Interactive)"></a>3. TBT (Total Blocking Time) / TTI (Time to Interactive)</h3><p><img src="image09.png" alt="image.png"></p>
+<ul>
+<li><p>Reduce JavaScript execution time 减少js的执行时间<br>当JavaScript执行时间超过2秒时，Lighthouse将显示警告。执行时间超过3.5秒时，审核将失败<br>建议（这些webpack都有相关的配置）：</p>
+<ul>
+<li>拆分代码</li>
+<li>缩小并压缩代码</li>
+<li>Tree shaking</li>
+<li>使用缓存代码</li>
+</ul>
+</li>
+<li><p>优化构建bundle体积<br>查看基于<strong>webpack-bundle-analyzer</strong>生成的体积分析报告<br><img src="image10.png" alt="image.png"></p>
+</li>
+</ul>
+<h3 id="4-其他"><a href="#4-其他" class="headerlink" title="4. 其他"></a>4. 其他</h3><h4 id="4-1-使用下一代图片编码格式使用图片"><a href="#4-1-使用下一代图片编码格式使用图片" class="headerlink" title="4.1 使用下一代图片编码格式使用图片"></a>4.1 使用下一代图片编码格式使用图片</h4><p>这里指的是webp格式，显然下面的图片没压缩，应该是运营上传的时候没压缩，可以考虑管理平台支持。<br><img src="image11.png" alt="image.png"></p>
+<h4 id="4-2-图片懒加载"><a href="#4-2-图片懒加载" class="headerlink" title="4.2 图片懒加载"></a>4.2 图片懒加载</h4><p><img src="image12.png" alt="image.png"></p>
+<h4 id="4-3-定制合理的缓存策略"><a href="#4-3-定制合理的缓存策略" class="headerlink" title="4.3 定制合理的缓存策略"></a>4.3 定制合理的缓存策略</h4><p>对于不常改变的静态资源比如说css、image等可以进行缓存<br><img src="image13.png" alt="image.png"></p>
+<p>参考文章：<br><a target="_blank" rel="noopener" href="https://juejin.cn/post/6911472693405548557">聊一聊前端性能优化</a><br><a target="_blank" rel="noopener" href="https://juejin.cn/post/6959333330277892133">我给网站做了一场性能手术</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90/" rel="tag"><i class="fa fa-tag"></i> 性能分析</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/04/node-study-notes/" rel="prev" title="node学习笔记">
+      <i class="fa fa-chevron-left"></i> node学习笔记
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/06/css-mtext-expand/" rel="next" title="css实现多行文本展开收起">
+      css实现多行文本展开收起 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#lighthouse%E9%9D%A2%E6%9D%BF"><span class="nav-number">2.</span> <span class="nav-text">lighthouse面板</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Core-Web-Vitals"><span class="nav-number">3.</span> <span class="nav-text">Core Web Vitals</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%B9%E5%96%84%E5%BB%BA%E8%AE%AE"><span class="nav-number">4.</span> <span class="nav-text">改善建议</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E8%A7%86%E8%A7%89%E7%A8%B3%E5%AE%9A%E6%80%A7-Cumulative-Layout-Shift"><span class="nav-number">4.1.</span> <span class="nav-text">1. 视觉稳定性 (Cumulative Layout Shift)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-1-%E4%BC%98%E5%8C%96%E6%9C%AA%E8%AE%BE%E7%BD%AE%E5%B0%BA%E5%AF%B8%E7%9A%84%E5%9B%BE%E7%89%87%E5%85%83%E7%B4%A0"><span class="nav-number">4.1.1.</span> <span class="nav-text">1.1 优化未设置尺寸的图片元素</span></a></li><li class="nav-item nav-level-4"><a class="nav-link"><span class="nav-number">4.1.2.</span> <span class="nav-text"></span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-2-%E9%81%BF%E5%85%8D%E9%A1%B5%E9%9D%A2%E5%B8%83%E5%B1%80%E5%8F%91%E7%94%9F%E5%81%8F%E7%A7%BB"><span class="nav-number">4.1.3.</span> <span class="nav-text">1.2 避免页面布局发生偏移</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-%E9%81%BF%E5%85%8D%E9%9D%9E%E5%90%88%E6%88%90%E5%8A%A8%E7%94%BB"><span class="nav-number">4.1.4.</span> <span class="nav-text">1.3 避免非合成动画</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E5%8A%A0%E8%BD%BD%E6%83%85%E5%86%B5-Largest-Contentful-Paint"><span class="nav-number">4.2.</span> <span class="nav-text">2. 加载情况 (Largest Contentful Paint)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-1-%E6%B6%88%E9%99%A4%E6%B8%B2%E6%9F%93%E5%A0%B5%E5%A1%9E%E7%9A%84%E8%B5%84%E6%BA%90"><span class="nav-number">4.2.1.</span> <span class="nav-text">2.1 消除渲染堵塞的资源</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-2-%E7%A7%BB%E9%99%A4%E6%9C%AA%E4%BD%BF%E7%94%A8%E7%9A%84-CSS-JavaScript"><span class="nav-number">4.2.2.</span> <span class="nav-text">2.2 移除未使用的 CSS&#x2F;JavaScript</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-TBT-Total-Blocking-Time-TTI-Time-to-Interactive"><span class="nav-number">4.3.</span> <span class="nav-text">3. TBT (Total Blocking Time) &#x2F; TTI (Time to Interactive)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E5%85%B6%E4%BB%96"><span class="nav-number">4.4.</span> <span class="nav-text">4. 其他</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#4-1-%E4%BD%BF%E7%94%A8%E4%B8%8B%E4%B8%80%E4%BB%A3%E5%9B%BE%E7%89%87%E7%BC%96%E7%A0%81%E6%A0%BC%E5%BC%8F%E4%BD%BF%E7%94%A8%E5%9B%BE%E7%89%87"><span class="nav-number">4.4.1.</span> <span class="nav-text">4.1 使用下一代图片编码格式使用图片</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-2-%E5%9B%BE%E7%89%87%E6%87%92%E5%8A%A0%E8%BD%BD"><span class="nav-number">4.4.2.</span> <span class="nav-text">4.2 图片懒加载</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-3-%E5%AE%9A%E5%88%B6%E5%90%88%E7%90%86%E7%9A%84%E7%BC%93%E5%AD%98%E7%AD%96%E7%95%A5"><span class="nav-number">4.4.3.</span> <span class="nav-text">4.3 定制合理的缓存策略</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Roya"
+      src="/images/avatar.jpeg">
+  <p class="site-author-name" itemprop="name">Roya</p>
+  <div class="site-description" itemprop="description">Web Developer</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Rouhui" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Rouhui" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:bighuiaaa@126.com" title="E-Mail → mailto:bighuiaaa@126.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Roya</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
